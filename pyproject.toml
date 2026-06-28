@@ -1,7 +1,10 @@
 [project]
-name = "alpha-forge"
+# PyPI 配布名は `alpha-forge-launcher`（`alpha-forge` は既存の無関係プロジェクト
+# `alphaforge` への類似ガードで PyPI に登録拒否されたため）。提供コマンドは
+# `alpha-forge`（正準）のまま維持する。
+name = "alpha-forge-launcher"
 version = "0.1.0"
-description = "Thin launcher for the AlphaForge backtesting CLI — downloads and runs the AlphaForge binary (uvx alpha-forge)."
+description = "Thin launcher for the AlphaForge backtesting CLI — downloads and runs the AlphaForge binary (provides the alpha-forge command)."
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "Apache-2.0" }
@@ -14,7 +17,11 @@ Homepage = "https://alforgelabs.com/"
 Repository = "https://github.com/alforge-labs/alpha-forge-launcher"
 
 [project.scripts]
+# `alpha-forge` が正準コマンド（docs / AGENTS.md / install すべてこれを使う）。
+# `alpha-forge-launcher` はパッケージ名と一致させた alias で `uvx alpha-forge-launcher`
+# を成立させる（どちらも同一エントリ）。
 alpha-forge = "alpha_forge_launcher.__main__:main"
+alpha-forge-launcher = "alpha_forge_launcher.__main__:main"
 
 [build-system]
 requires = ["hatchling"]

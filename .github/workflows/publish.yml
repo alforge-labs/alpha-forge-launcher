@@ -3,7 +3,7 @@ name: Publish to PyPI
 # タグ push（v*）で PyPI に公開する。PyPI Trusted Publishing（OIDC）を使用し、
 # API トークンを GitHub Secrets に保存しない。
 # 事前に PyPI 側で trusted publisher を登録しておくこと:
-#   - PyPI project: alpha-forge
+#   - PyPI project: alpha-forge-launcher
 #   - Owner/repo:   alforge-labs/alpha-forge-launcher
 #   - Workflow:     publish.yml
 #   - Environment:  pypi

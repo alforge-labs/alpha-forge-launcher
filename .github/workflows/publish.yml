@@ -1,0 +1,52 @@
+name: Publish to PyPI
+
+# タグ push（v*）で PyPI に公開する。PyPI Trusted Publishing（OIDC）を使用し、
+# API トークンを GitHub Secrets に保存しない。
+# 事前に PyPI 側で trusted publisher を登録しておくこと:
+#   - PyPI project: alpha-forge
+#   - Owner/repo:   alforge-labs/alpha-forge-launcher
+#   - Workflow:     publish.yml
+#   - Environment:  pypi
+# 新規プロジェクトは「pending publisher」として登録する（初回公開前）。
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install uv
+        # v8 系はメジャータグ未提供（v8.x.y のフルタグのみ）のためフル固定
+        uses: astral-sh/setup-uv@v8.2.0
+      - name: Run tests & lint
+        run: |
+          uv sync
+          uv run ruff check .
+          uv run pytest -q
+
+  publish:
+    needs: test
+    # workflow_dispatch（CI 動作検証用）では publish をスキップする。
+    # 公開済みバージョンの再アップロードは PyPI に拒否され必ず失敗するため。
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write  # Trusted Publishing に必須
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install uv
+        # v8 系はメジャータグ未提供（v8.x.y のフルタグのみ）のためフル固定
+        uses: astral-sh/setup-uv@v8.2.0
+      - name: Build distribution
+        run: uv build
+      - name: Publish to PyPI (Trusted Publishing)
+        uses: pypa/gh-action-pypi-publish@release/v1

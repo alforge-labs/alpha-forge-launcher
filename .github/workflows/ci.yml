@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.12"]
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install uv
+        # v8 系はメジャータグ未提供（v8.x.y のフルタグのみ）のためフル固定
+        uses: astral-sh/setup-uv@v8.2.0
+      - name: Set up Python ${{ matrix.python-version }}
+        run: uv python install ${{ matrix.python-version }}
+      - name: Run tests & lint
+        run: |
+          uv sync --python ${{ matrix.python-version }}
+          uv run ruff check .
+          uv run pytest -q

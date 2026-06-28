@@ -51,8 +51,9 @@ def test_verify_sha256_mismatch_exits(monkeypatch, tmp_path):
         def read(self): return b"deadbeef  a.tar.gz"
 
     monkeypatch.setattr(bootstrap.urllib.request, "urlopen", lambda *a, **k: _Resp())
-    with pytest.raises(SystemExit):
+    with pytest.raises(SystemExit) as ei:
         bootstrap._verify_sha256(archive, "https://x/a.tar.gz")
+    assert ei.value.code == 1
 
 
 def test_verify_sha256_match_passes(monkeypatch, tmp_path):
@@ -78,6 +79,37 @@ def test_safe_extract_rejects_traversal(tmp_path):
         tar.addfile(info, io.BytesIO(data))
     with pytest.raises(SystemExit):
         bootstrap._safe_extract(bad, tmp_path / "out")
+
+
+def test_safe_extract_rejects_symlink(tmp_path):
+    bad = tmp_path / "bad.tar.gz"
+    with tarfile.open(bad, "w:gz") as tar:
+        # 通常ファイル
+        data = b"x"
+        f = tarfile.TarInfo(name="forge.dist/ok.txt")
+        f.size = len(data)
+        tar.addfile(f, io.BytesIO(data))
+        # symlink メンバ（帯域外を指す）
+        link = tarfile.TarInfo(name="forge.dist/evil")
+        link.type = tarfile.SYMTYPE
+        link.linkname = "/tmp"
+        tar.addfile(link)
+    with pytest.raises(SystemExit) as ei:
+        bootstrap._safe_extract(bad, tmp_path / "out")
+    assert ei.value.code == 1
+
+
+def test_verify_sha256_empty_checksum_skips(monkeypatch, tmp_path):
+    archive = tmp_path / "a.tar.gz"
+    archive.write_bytes(b"hello")
+
+    class _Resp:
+        def __enter__(self): return self
+        def __exit__(self, *a): return False
+        def read(self): return b""
+
+    monkeypatch.setattr(bootstrap.urllib.request, "urlopen", lambda *a, **k: _Resp())
+    bootstrap._verify_sha256(archive, "https://x/a.tar.gz")  # 例外が出なければ OK（skip）
 
 
 def test_run_execs_cached_binary(monkeypatch, tmp_path):

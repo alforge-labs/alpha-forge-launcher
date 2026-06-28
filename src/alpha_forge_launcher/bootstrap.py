@@ -69,13 +69,18 @@ def _cache_root() -> Path:
 
 
 def _verify_sha256(archive: Path, base_url: str) -> None:
-    """``<base_url>.sha256`` を取得して検証。取得不能なら警告して続行。"""
+    """``<base_url>.sha256`` を取得して検証。取得不能/空なら警告して続行。不一致は中断。"""
     try:
         with urllib.request.urlopen(base_url + ".sha256", timeout=_HTTP_TIMEOUT) as resp:
-            expected = resp.read().decode().split()[0].strip().lower()
+            content = resp.read().decode()
     except Exception:  # noqa: BLE001
         sys.stderr.write("alpha-forge: could not fetch SHA256 checksum; skipping verification.\n")
         return
+    parts = content.split()
+    if not parts:
+        sys.stderr.write("alpha-forge: SHA256 checksum file was empty; skipping verification.\n")
+        return
+    expected = parts[0].strip().lower()
     actual = hashlib.sha256(archive.read_bytes()).hexdigest().lower()
     if actual != expected:
         sys.stderr.write(
@@ -86,16 +91,25 @@ def _verify_sha256(archive: Path, base_url: str) -> None:
 
 
 def _safe_extract(archive: Path, dest: Path) -> None:
-    """path traversal を防いで tar.gz を dest へ展開する（CVE-2007-4559 対策）。"""
+    """path traversal を防いで tar.gz を dest へ展開する（CVE-2007-4559 対策）。
+
+    symlink/hardlink メンバは拒否する（先に展開された symlink 経由の
+    帯域外書き込みを防ぐ。正規の forge.dist バンドルに symlink は含まれない）。
+    """
     dest.mkdir(parents=True, exist_ok=True)
     dest_resolved = dest.resolve()
     with tarfile.open(archive, "r:gz") as tar:
         for member in tar.getmembers():
+            if member.issym() or member.islnk():
+                sys.stderr.write(
+                    f"alpha-forge: symlink/hardlink in archive rejected: {member.name}\n"
+                )
+                raise SystemExit(1)
             target = (dest / member.name).resolve()
             if target != dest_resolved and not str(target).startswith(str(dest_resolved) + os.sep):
                 sys.stderr.write(f"alpha-forge: unsafe path in archive: {member.name}\n")
                 raise SystemExit(1)
-        tar.extractall(dest)  # noqa: S202 (上で全メンバを検証済み)
+        tar.extractall(dest)  # noqa: S202 (全メンバを検証済み)
 
 
 def _strip_quarantine(forge_dist: Path) -> None:

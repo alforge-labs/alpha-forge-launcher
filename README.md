@@ -2,6 +2,8 @@
 
 [AlphaForge](https://alforgelabs.com/) のバックテスト CLI バイナリを取得・起動する薄いランチャーです（Apache-2.0・依存ゼロ）。インストールすると `alpha-forge` コマンドを提供します。
 
+[![Follow @Alforge_bot](https://img.shields.io/badge/Follow-%40Alforge__bot-000?logo=x)](https://x.com/Alforge_bot)
+
 > PyPI 配布名は `alpha-forge-launcher` です（`alpha-forge` は既存の無関係プロジェクト `alphaforge` への PyPI 類似名ガードで登録できないため）。提供するコマンドは `alpha-forge`（正準）のまま維持しています。
 
 ```bash

@@ -15,6 +15,7 @@ dependencies = []
 [project.urls]
 Homepage = "https://alforgelabs.com/"
 Repository = "https://github.com/alforge-labs/alpha-forge-launcher"
+"X (Twitter)" = "https://x.com/Alforge_bot"
 
 [project.scripts]
 # `alpha-forge` が正準コマンド（docs / AGENTS.md / install すべてこれを使う）。
